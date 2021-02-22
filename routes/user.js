@@ -4,11 +4,13 @@ const passport = require("passport");
 
 const { User, Video, Post } = require("../models");
 
+const { isLoggedIn, isNotLoggedIn } = require("./middleware");
+
 const router = express.Router();
 
 
 
-router.post("/register", async (req, res, next) => {
+router.post("/register", isNotLoggedIn, async (req, res, next) => {
     try {
         const exUser = await User.findOne({
             where: {
@@ -32,7 +34,7 @@ router.post("/register", async (req, res, next) => {
 });
 
 //login
-router.post("/login", (req, res, next) => {
+router.post("/login", isNotLoggedIn, (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
         if (err) {
             console.error(err);
@@ -53,7 +55,7 @@ router.post("/login", (req, res, next) => {
 });
 
 // LOGOUT
-router.post("/logout", (req, res, next) => {
+router.post("/logout", isLoggedIn, (req, res, next) => {
     req.logOut();
     req.session.destroy();
     res.status(201).send("logout success!");
@@ -95,7 +97,7 @@ router.get("/:id", async (req, res, next) => {
     }
 });
 
-router.post("/:id/subscribing", async (req, res, next) => {
+router.post("/:id/subscribing", isLoggedIn, async (req, res, next) => {
     try {
         const me = await User.findOne({
             where: {
@@ -118,7 +120,7 @@ router.post("/:id/subscribing", async (req, res, next) => {
     }
 });
 
-router.post("/:id/unSubscribing", async (req, res, next) => {
+router.post("/:id/unSubscribing", isLoggedIn, async (req, res, next) => {
     try {
         const me = await User.findOne({
             where: {

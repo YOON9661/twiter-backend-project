@@ -116,7 +116,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // 비디오 삭제
-router.post("/:id/delete", async (req, res, next) => {
+router.post("/:id/delete", isLoggedIn, async (req, res, next) => {
     try {
         const video = await Video.findOne({
             where: {
@@ -135,7 +135,7 @@ router.post("/:id/delete", async (req, res, next) => {
 });
 
 // 비디오 수정
-router.post("/:id/update", async (req, res, next) => {
+router.post("/:id/update", isLoggedIn, async (req, res, next) => {
     try {
         const video = await Video.findOne({
             where: {
@@ -157,7 +157,7 @@ router.post("/:id/update", async (req, res, next) => {
 
 // 댓글
 // 댓글 생성
-router.post("/comment/:id", async (req, res, next) => {
+router.post("/comment/:id", isLoggedIn, async (req, res, next) => {
     try {
         const newComment = await Comment.create({
             content: req.body.text,
@@ -171,7 +171,7 @@ router.post("/comment/:id", async (req, res, next) => {
     }
 });
 // 댓글 삭제
-router.post("/comment/delete/:id", async (req, res, next) => {
+router.post("/comment/delete/:id", isLoggedIn, async (req, res, next) => {
     try {
         const comment = await Comment.findOne({
             where: {
