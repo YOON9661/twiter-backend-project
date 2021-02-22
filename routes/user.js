@@ -62,25 +62,30 @@ router.post("/logout", (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
     try {
         const user = await User.findOne({
+            order: [["createdAt", "DESC"]],
             where: {
                 id: req.params.id
             },
             include: [{
-                model: Video
+                model: Video,
             }, {
-                model: Post
+                model: Post,
+                order: [["createdAt", "DESC"]]
             }, {
                 model: Video,
                 through: "VideoLike",
-                as: "VideoLikings"
+                as: "VideoLikings",
+                order: [["createdAt", "DESC"]],
             }, {
                 model: User,
                 through: "Subscribe",
-                as: "Subscribings"
+                as: "Subscribings",
+                order: [["createdAt", "DESC"]]
             }, {
                 model: User,
                 through: "Subscribe",
-                as: "Subscribers"
+                as: "Subscribers",
+                order: [["createdAt", "DESC"]]
             }]
         });
         res.status(201).json(user);
