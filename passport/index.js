@@ -13,12 +13,12 @@ module.exports = () => {
                 where: { id },
                 include: [{
                     model: User,
-                    attributes: ["id", "nickname"],
-                    as: "Subscribers"
+                    as: "Followers",
+                    attributes: ["id", "nickname"]
                 }, {
                     model: User,
-                    attributes: ["id", "nickname"],
-                    as: "Subscribings"
+                    as: "Followings",
+                    attributes: ["id", "nickname"]
                 }]
             })
             done(null, user);

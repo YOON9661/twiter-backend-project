@@ -8,7 +8,7 @@ const db = {};
 
 db.User = require("./user")(sequelize, Sequelize);
 db.Post = require("./post")(sequelize, Sequelize);
-db.Video = require("./video")(sequelize, Sequelize);
+db.Image = require("./image")(sequelize, Sequelize);
 db.Comment = require("./comment")(sequelize, Sequelize);
 
 Object.keys(db).forEach(modelName => {

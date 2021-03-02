@@ -12,18 +12,15 @@ const passportConfig = require("./passport");
 
 dotenv.config();
 // router
-const mainRouter = require("./routes/main");
 const postRouter = require("./routes/post");
 const userRouter = require("./routes/user");
-const videoRouter = require("./routes/video");
-const likeRouter = require("./routes/like");
-const dislikeRouter = require("./routes/dislike");
+const retweetRouter = require("./routes/retweet");
 
 
 const app = express();
 passportConfig();
 
-db.sequelize.sync({ force: false })
+db.sequelize.sync({ force: true })
     .then(() => {
         console.log("db 연결 성공")
     })
@@ -37,9 +34,8 @@ app.use(cors({
 }));
 app.use(morgan("dev")); //dev mode
 app.use("/img", express.static(path.join(__dirname, "uploads")));
-app.use("/videos", express.static(path.join(__dirname, "videos")));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false })); // req.body
+app.use(express.urlencoded({ extended: true })); // req.body
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(session({
     resave: false,
@@ -53,12 +49,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use("/", mainRouter);
 app.use("/user", userRouter);
 app.use("/post", postRouter);
-app.use("/video", videoRouter);
-app.use("/like", likeRouter);
-app.use("/dislike", dislikeRouter);
+app.use("/retweet", retweetRouter);
 
 
 // error router

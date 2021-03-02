@@ -2,12 +2,11 @@ const express = require("express");
 const bcrypt = require('bcrypt');
 const passport = require("passport");
 
-const { User, Video, Post } = require("../models");
+const { User, Post } = require("../models");
 
 const { isLoggedIn, isNotLoggedIn } = require("./middleware");
 
 const router = express.Router();
-
 
 
 router.post("/register", isNotLoggedIn, async (req, res, next) => {
@@ -56,7 +55,7 @@ router.post("/login", isNotLoggedIn, (req, res, next) => {
 
 // LOGOUT
 router.post("/logout", isLoggedIn, (req, res, next) => {
-    req.logOut();
+    req.logOut;
     req.session.destroy();
     res.status(201).send("logout success!");
 });
@@ -69,25 +68,16 @@ router.get("/:id", async (req, res, next) => {
                 id: req.params.id
             },
             include: [{
-                model: Video,
-            }, {
                 model: Post,
                 order: [["createdAt", "DESC"]]
             }, {
-                model: Video,
-                through: "VideoLike",
-                as: "VideoLikings",
-                order: [["createdAt", "DESC"]],
+                model: User,
+                through: "Follow",
+                as: "Followers"
             }, {
                 model: User,
-                through: "Subscribe",
-                as: "Subscribings",
-                order: [["createdAt", "DESC"]]
-            }, {
-                model: User,
-                through: "Subscribe",
-                as: "Subscribers",
-                order: [["createdAt", "DESC"]]
+                through: "Follow",
+                as: "Followings"
             }]
         });
         res.status(201).json(user);
@@ -97,7 +87,8 @@ router.get("/:id", async (req, res, next) => {
     }
 });
 
-router.post("/:id/subscribing", isLoggedIn, async (req, res, next) => {
+// following 
+router.post("/:id/following", isLoggedIn, async (req, res, next) => {
     try {
         const me = await User.findOne({
             where: {
@@ -112,15 +103,15 @@ router.post("/:id/subscribing", isLoggedIn, async (req, res, next) => {
         if (!user) {
             res.status(404).send("해당 유저는 존재하지 않습니다...");
         }
-        await me.addSubscribings(user);
-        res.status(201).json({ subscribe: true, SubscribedId: user, SubscribingId: me });
+        await me.addFollowings(user);
+        res.status(201).json({ Follow: true, FolloweredId: user, FollowingId: me });
     } catch (err) {
         console.error(err);
         next(err);
     }
 });
 
-router.post("/:id/unSubscribing", isLoggedIn, async (req, res, next) => {
+router.post("/:id/unfollowing", isLoggedIn, async (req, res, next) => {
     try {
         const me = await User.findOne({
             where: {
@@ -135,8 +126,8 @@ router.post("/:id/unSubscribing", isLoggedIn, async (req, res, next) => {
         if (!user) {
             res.status(404).send("해당 유저는 존재하지 않습니다...");
         }
-        await me.removeSubscribings(user);
-        res.status(201).json({ unSubscribe: true, UnSubscribedId: user, UnSubscribingId: me });
+        await me.removeFollowings(user);
+        res.status(201).json({ UnFollow: true, UnFolloweredId: user, UnFollowingId: me });
     } catch (err) {
         console.error(err);
         next(err);

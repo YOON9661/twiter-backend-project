@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 
-const { Post, User, Comment } = require("../models");
+const { Post, User, Comment, Image } = require("../models");
 
 const router = express.Router();
 
@@ -16,11 +16,17 @@ router.get("/", async (req, res, next) => {
             }, {
                 model: User,
                 through: "PostLike",
-                as: "PostLiker",
+                as: "PostLikers",
                 attributes: ["id", "nickname"]
             }, {
                 model: Comment,
-                attributes: ["id"],
+                include: {
+                    model: User,
+                    attributes: ["id", "nickname"]
+                }
+            }, {
+                model: Post,
+                as: "Retweet",
                 include: {
                     model: User,
                     attributes: ["id", "nickname"]
@@ -33,6 +39,7 @@ router.get("/", async (req, res, next) => {
         next(err);
     }
 });
+
 
 // file data
 // preview의 목적
@@ -59,10 +66,17 @@ router.post("/upload", upload2.none(), async (req, res, next) => {
     try {
         const post = await Post.create({
             content: req.body.description,
-            image: req.body.url,
             UserId: req.user.id
         });
-        res.status(201).json(post);
+        if (req.body.imagepath !== null) {
+            const image = await Image.create({
+                imagepath: req.body.imageurl,
+                user: req.user.id,
+                post: req.params.id
+            })
+            return res.status(201).json({ post, image });
+        }
+        res.status(201).json({ post });
     } catch (err) {
         console.error(err);
         next(err);
@@ -70,3 +84,56 @@ router.post("/upload", upload2.none(), async (req, res, next) => {
 });
 
 module.exports = router;
+
+// create comment
+router.post("/:id/comment", async (req, res, next) => {
+    try {
+        const newComment = await Comment.create({
+            content: req.body.comment,
+            PostId: req.params.id,
+            UserId: req.user.id
+        });
+        res.status(201).json(newComment);
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});
+// update comment
+router.post("/:id/comment/update", async (req, res, next) => {
+    try {
+        const comment = await Comment.findOne({
+            where: {
+                id: req.params.id
+            }
+        });
+        if (!comment) {
+            return res.status(404).send("no comment exist");
+        }
+        comment.update({
+            content: req.body.comment
+        });
+        res.status(201).json({ update: true, data: comment });
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});
+// delete comment
+router.delete("/:id/comment/delete", async (req, res, next) => {
+    try {
+        const comment = await Comment.findOne({
+            where: {
+                id: req.params.id
+            }
+        });
+        if (!comment) {
+            return res.status(404).send("no comment exist");
+        }
+        await comment.destory();
+        res.status(201).json({ commentDelete: true, commentId: req.params.id });
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});

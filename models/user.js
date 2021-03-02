@@ -19,12 +19,10 @@ module.exports = (sequelize, DataTypes) => {
         collate: "utf8_general_ci"
     });
     User.associate = (db) => {
-        db.User.belongsToMany(db.User, { through: "Subscribe", as: "Subscribings", foreignKey: "SubscribedId" });
-        db.User.belongsToMany(db.User, { through: "Subscribe", as: "Subscribers", foreignKey: "SubscribingId" });
-        db.User.belongsToMany(db.Video, { through: "VideoLike", as: "VideoLikings" });
-        db.User.belongsToMany(db.Video, { through: "VideoDisike", as: "VideoDislikings" });
+        db.User.belongsToMany(db.User, { through: "Follow", as: "Followers", foreignKey: "FollowingId" });
+        db.User.belongsToMany(db.User, { through: "Follow", as: "Followings", foreignKey: "FollowerId" });
         db.User.belongsToMany(db.Post, { through: "PostLike", as: "PostLiking" });
-        db.User.hasMany(db.Video);
+        db.User.belongsToMany(db.Comment, { through: "CommentLike", as: "CommentLiking" });
         db.User.hasMany(db.Post);
         db.User.hasMany(db.Comment);
     };
