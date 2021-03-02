@@ -15,7 +15,7 @@ dotenv.config();
 const postRouter = require("./routes/post");
 const userRouter = require("./routes/user");
 const retweetRouter = require("./routes/retweet");
-
+const commentRouter = require("./routes/comment");
 
 const app = express();
 passportConfig();
@@ -52,6 +52,7 @@ app.use(passport.session());
 app.use("/user", userRouter);
 app.use("/post", postRouter);
 app.use("/retweet", retweetRouter);
+app.use("/comment", commentRouter);
 
 
 // error router
