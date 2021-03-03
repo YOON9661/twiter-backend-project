@@ -20,7 +20,7 @@ const commentRouter = require("./routes/comment");
 const app = express();
 passportConfig();
 
-db.sequelize.sync({ force: true })
+db.sequelize.sync({ force: false })
     .then(() => {
         console.log("db 연결 성공")
     })
@@ -61,7 +61,7 @@ app.use((req, res, next) => {
 })
 
 app.use((err, req, res, next) => {
-    res.status(500).send("server error...");
+    res.status(500).send("서버 에러 개세이야...");
 })
 
 app.listen(3001, () => {

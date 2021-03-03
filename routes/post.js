@@ -27,9 +27,16 @@ router.get("/", async (req, res, next) => {
             }, {
                 model: Post,
                 as: "Retweet",
-                include: {
+                include: [{
                     model: User,
                     attributes: ["id", "nickname"]
+                }, {
+                    model: Image
+                }]
+            }, {
+                model: Image,
+                include: {
+                    model: Post
                 }
             }],
         });
@@ -68,12 +75,13 @@ router.post("/upload", upload2.none(), async (req, res, next) => {
             content: req.body.description,
             UserId: req.user.id
         });
-        if (req.body.imagepath !== null) {
+        // image가 있을 때..
+        if (req.body.imagepath) {
             const image = await Image.create({
-                imagepath: req.body.imageurl,
-                user: req.user.id,
-                post: req.params.id
-            })
+                Imagepath: req.body.imagepath,
+                UserId: req.user.id,
+            });
+            post.addImages(image);
             return res.status(201).json({ post, image });
         }
         res.status(201).json({ post });
@@ -84,6 +92,51 @@ router.post("/upload", upload2.none(), async (req, res, next) => {
 });
 
 module.exports = router;
+
+// LIKE
+router.post("/:id/like", async (req, res, next) => {
+    try {
+        const post = await Post.findOne({
+            where: {
+                id: req.params.id
+            }
+        });
+        if (!post) {
+            return res.status(404).send("no post exist");
+        }
+        await post.addPostLikers(req.user.id);
+        res.status(201).json({
+            like: "success",
+            userId: req.user.id,
+            postId: req.params.id
+        });
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});
+router.delete("/:id/likedelete", async (req, res, next) => {
+    try {
+        const post = await Post.findOne({
+            where: {
+                id: req.params.id
+            }
+        });
+        if (!post) {
+            return res.status(404).send("no post exist");
+        }
+        await post.removePostLikers(req.user.id);
+        res.status(201).json({
+            like: "success",
+            userId: req.user.id,
+            postId: req.params.id
+        });
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});
+
 
 // create comment
 router.post("/:id/comment", async (req, res, next) => {

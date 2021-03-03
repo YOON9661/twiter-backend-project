@@ -7,20 +7,23 @@ const { isLoggedIn } = require("./middleware");
 const router = express.Router();
 
 
-router.post("/:id", isLoggedIn, async (req, res, next) => {
+router.post("/:postId", isLoggedIn, async (req, res, next) => {
     try {
-        const myPost = await Post.create({
-            UserId: req.user.id
-        });
-        const retweetPost = await Post.findOne({
+        const RetweetTargetPost = await Post.findOne({
             where: {
-                id: req.params.id
+                id: req.params.postId
             }
         });
-        if (!retweetPost) {
+        if (!RetweetTargetPost) {
             return res.status(404).send("no post exist");
         }
-        myPost.addRetweet(req.params.id);
+        const retweetingPost = await Post.create({
+            UserId: req.user.id,
+            RetweetId: req.params.postId
+            // req.params.postId
+        });
+        console.log(retweetingPost);
+        res.status(201).json({ retweetingPost });
     } catch (err) {
         console.error(err);
         next(err);
