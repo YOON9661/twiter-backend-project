@@ -22,7 +22,7 @@ router.post("/:postId", isLoggedIn, async (req, res, next) => {
             RetweetId: req.params.postId
             // req.params.postId
         });
-        console.log(retweetingPost);
+        RetweetTargetPost.addRetweeters(req.user.id);
         res.status(201).json({ retweetingPost });
     } catch (err) {
         console.error(err);

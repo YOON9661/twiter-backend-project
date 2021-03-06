@@ -20,10 +20,15 @@ router.get("/", async (req, res, next) => {
                 attributes: ["id", "nickname"]
             }, {
                 model: Comment,
-                include: {
+                include: [{
                     model: User,
                     attributes: ["id", "nickname"]
-                }
+                }, {
+                    model: User,
+                    through: "CommentLike",
+                    as: "CommentLikers",
+                    attributes: ["id", "nickname"]
+                }]
             }, {
                 model: Post,
                 as: "Retweet",
@@ -32,12 +37,13 @@ router.get("/", async (req, res, next) => {
                     attributes: ["id", "nickname"]
                 }, {
                     model: Image
-                }]
+                }],
             }, {
-                model: Image,
-                include: {
-                    model: Post
-                }
+                model: User,
+                through: "Retweet",
+                as: "Retweeters"
+            }, {
+                model: Image
             }],
         });
         res.status(201).json(posts);
@@ -104,10 +110,16 @@ router.post("/:id/like", async (req, res, next) => {
         if (!post) {
             return res.status(404).send("no post exist");
         }
+        const myData = await User.findOne({
+            where: {
+                id: req.user.id
+            }
+        })
         await post.addPostLikers(req.user.id);
         res.status(201).json({
-            like: "success",
-            userId: req.user.id,
+            addLike: true,
+            id: req.user.id,
+            nickname: myData.nickname,
             postId: req.params.id
         });
     } catch (err) {
@@ -127,8 +139,8 @@ router.delete("/:id/likedelete", async (req, res, next) => {
         }
         await post.removePostLikers(req.user.id);
         res.status(201).json({
-            like: "success",
-            userId: req.user.id,
+            removeLike: true,
+            id: req.user.id,
             postId: req.params.id
         });
     } catch (err) {
@@ -152,41 +164,41 @@ router.post("/:id/comment", async (req, res, next) => {
         next(err);
     }
 });
-// update comment
-router.post("/:id/comment/update", async (req, res, next) => {
-    try {
-        const comment = await Comment.findOne({
-            where: {
-                id: req.params.id
-            }
-        });
-        if (!comment) {
-            return res.status(404).send("no comment exist");
-        }
-        comment.update({
-            content: req.body.comment
-        });
-        res.status(201).json({ update: true, data: comment });
-    } catch (err) {
-        console.log(err);
-        next(err);
-    }
-});
-// delete comment
-router.delete("/:id/comment/delete", async (req, res, next) => {
-    try {
-        const comment = await Comment.findOne({
-            where: {
-                id: req.params.id
-            }
-        });
-        if (!comment) {
-            return res.status(404).send("no comment exist");
-        }
-        await comment.destory();
-        res.status(201).json({ commentDelete: true, commentId: req.params.id });
-    } catch (err) {
-        console.log(err);
-        next(err);
-    }
-});
+// // update comment
+// router.post("/:id/comment/update", async (req, res, next) => {
+//     try {
+//         const comment = await Comment.findOne({
+//             where: {
+//                 id: req.params.id
+//             }
+//         });
+//         if (!comment) {
+//             return res.status(404).send("no comment exist");
+//         }
+//         comment.update({
+//             content: req.body.comment
+//         });
+//         res.status(201).json({ update: true, data: comment });
+//     } catch (err) {
+//         console.log(err);
+//         next(err);
+//     }
+// });
+// // delete comment
+// router.delete("/:id/comment/delete", async (req, res, next) => {
+//     try {
+//         const comment = await Comment.findOne({
+//             where: {
+//                 id: req.params.id
+//             }
+//         });
+//         if (!comment) {
+//             return res.status(404).send("no comment exist");
+//         }
+//         await comment.destory();
+//         res.status(201).json({ commentDelete: true, commentId: req.params.id });
+//     } catch (err) {
+//         console.log(err);
+//         next(err);
+//     }
+// });
