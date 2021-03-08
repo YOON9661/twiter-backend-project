@@ -1,8 +1,11 @@
+const { ESRCH } = require("constants");
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
 
 const { Post, User, Comment, Image } = require("../models");
+
+const { isLoggedIn } = require("./middleware");
 
 const router = express.Router();
 
@@ -96,8 +99,29 @@ router.post("/upload", upload2.none(), async (req, res, next) => {
         next(err);
     }
 });
+// post delete
+router.delete("/:id/delete", isLoggedIn, async (req, res, next) => {
+    try {
+        const post = await Post.findOne({
+            where: {
+                id: req.params.id
+            }
+        });
+        if (!post) {
+            return res.status(404).send("포스트 없다 이새키야");
+        }
+        post.destroy();
+        res.status(201).json({
+            postId: req.params.id
+        });
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+})
 
-module.exports = router;
+
+
 
 // LIKE
 router.post("/:id/like", async (req, res, next) => {
@@ -117,10 +141,9 @@ router.post("/:id/like", async (req, res, next) => {
         })
         await post.addPostLikers(req.user.id);
         res.status(201).json({
-            addLike: true,
             id: req.user.id,
             nickname: myData.nickname,
-            postId: req.params.id
+            PostId: req.params.id
         });
     } catch (err) {
         console.log(err);
@@ -137,11 +160,16 @@ router.delete("/:id/likedelete", async (req, res, next) => {
         if (!post) {
             return res.status(404).send("no post exist");
         }
+        const myData = await User.findOne({
+            where: {
+                id: req.user.id
+            }
+        })
         await post.removePostLikers(req.user.id);
         res.status(201).json({
-            removeLike: true,
-            id: req.user.id,
-            postId: req.params.id
+            id: myData.id,
+            nickname: myData.nickname,
+            PostId: req.params.id
         });
     } catch (err) {
         console.log(err);
@@ -149,56 +177,143 @@ router.delete("/:id/likedelete", async (req, res, next) => {
     }
 });
 
+// comment like
+router.post("/:postId/comment/:commentId/like", isLoggedIn, async (req, res, next) => {
+    try {
+        const post = await Post.findOne({
+            where: {
+                id: req.params.postId
+            }
+        });
+        if (!post) {
+            return res.status(404).send("포스트 없어용");
+        }
+        const comment = await Comment.findOne({
+            where: {
+                id: req.params.commentId
+            }
+        });
+        if (!comment) {
+            return res.status(404).send("no comment exist");
+        }
+        comment.addCommentLikers(req.user.id);
+        res.status(201).json({
+            id: req.user.id,
+            postId: req.params.postId,
+            commentId: req.params.commentId,
+        });
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+});
+router.delete("/:postId/comment/:commentId/like/delete", isLoggedIn, async (req, res, next) => {
+    try {
+        const post = await Post.findOne({
+            where: {
+                id: req.params.postId
+            }
+        });
+        if (!post) {
+            return res.status(404).send("포스트 없어용");
+        }
+        const comment = await Comment.findOne({
+            where: {
+                id: req.params.commentId
+            }
+        });
+        if (!comment) {
+            return res.status(404).send("no comment exist");
+        }
+        comment.removeCommentLikers(req.user.id);
+        res.status(201).json({
+            id: req.user.id,
+            postId: req.params.postId,
+            commentId: req.params.commentId,
+        });
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+});
 
 // create comment
-router.post("/:id/comment", async (req, res, next) => {
+router.post("/:id/comment", isLoggedIn, async (req, res, next) => {
     try {
         const newComment = await Comment.create({
             content: req.body.comment,
             PostId: req.params.id,
             UserId: req.user.id
         });
-        res.status(201).json(newComment);
+        const me = await User.findOne({
+            where: {
+                id: req.user.id
+            }
+        });
+        res.status(201).json({
+            id: newComment.id,
+            content: newComment.content,
+            UserId: me.id,
+            PostId: req.params.id,
+            User: {
+                id: me.id,
+                nickname: me.nickname
+            },
+            CommentLikers: []
+        });
     } catch (err) {
         console.log(err);
         next(err);
     }
 });
-// // update comment
-// router.post("/:id/comment/update", async (req, res, next) => {
-//     try {
-//         const comment = await Comment.findOne({
-//             where: {
-//                 id: req.params.id
-//             }
-//         });
-//         if (!comment) {
-//             return res.status(404).send("no comment exist");
-//         }
-//         comment.update({
-//             content: req.body.comment
-//         });
-//         res.status(201).json({ update: true, data: comment });
-//     } catch (err) {
-//         console.log(err);
-//         next(err);
-//     }
-// });
-// // delete comment
-// router.delete("/:id/comment/delete", async (req, res, next) => {
-//     try {
-//         const comment = await Comment.findOne({
-//             where: {
-//                 id: req.params.id
-//             }
-//         });
-//         if (!comment) {
-//             return res.status(404).send("no comment exist");
-//         }
-//         await comment.destory();
-//         res.status(201).json({ commentDelete: true, commentId: req.params.id });
-//     } catch (err) {
-//         console.log(err);
-//         next(err);
-//     }
-// });
+// update comment
+router.post("/:postId/comment/:commentId/update", isLoggedIn, async (req, res, next) => {
+    try {
+        const comment = await Comment.findOne({
+            where: {
+                id: req.params.commentId
+            }
+        });
+        if (!comment) {
+            return res.status(404).send("no comment exist");
+        }
+        comment.update({
+            content: req.body.comment
+        });
+        res.status(201).json({ update: true, data: comment });
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});
+// delete comment
+router.delete("/:postId/comment/:commentId/delete", isLoggedIn, async (req, res, next) => {
+    try {
+        const post = await Post.findOne({
+            where: {
+                id: req.params.postId
+            }
+        });
+        if (!post) {
+            return res.status(404).send("포스트 없다 개세이야")
+        }
+        const comment = await Comment.findOne({
+            where: {
+                id: req.params.commentId
+            }
+        });
+        if (!comment) {
+            return res.status(404).send("no comment exist");
+        }
+        await comment.destroy();
+        res.status(201).json({
+            postId: req.params.postId,
+            commentId: req.params.commentId
+        });
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});
+
+module.exports = router;
