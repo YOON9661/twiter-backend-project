@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require('bcrypt');
 const passport = require("passport");
 
-const { User, Post } = require("../models");
+const { User, Post, Comment, Image } = require("../models");
 
 const { isLoggedIn, isNotLoggedIn } = require("./middleware");
 
@@ -63,13 +63,47 @@ router.post("/logout", isLoggedIn, (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
     try {
         const user = await User.findOne({
-            order: [["createdAt", "DESC"]],
             where: {
                 id: req.params.id
             },
             include: [{
                 model: Post,
-                order: [["createdAt", "DESC"]]
+                order: [["createdAt", "DESC"]],
+                include: [{
+                    model: User,
+                    attributes: ["id", "nickname"]
+                }, {
+                    model: User,
+                    through: "PostLike",
+                    as: "PostLikers",
+                    attributes: ["id", "nickname"]
+                }, {
+                    model: Comment,
+                    include: [{
+                        model: User,
+                        attributes: ["id", "nickname"]
+                    }, {
+                        model: User,
+                        through: "CommentLike",
+                        as: "CommentLikers",
+                        attributes: ["id", "nickname"]
+                    }]
+                }, {
+                    model: Post,
+                    as: "Retweet",
+                    include: [{
+                        model: User,
+                        attributes: ["id", "nickname"]
+                    }, {
+                        model: Image
+                    }],
+                }, {
+                    model: User,
+                    through: "Retweet",
+                    as: "Retweeters"
+                }, {
+                    model: Image
+                }]
             }, {
                 model: User,
                 through: "Follow",
@@ -103,8 +137,8 @@ router.post("/:id/following", isLoggedIn, async (req, res, next) => {
         if (!user) {
             res.status(404).send("해당 유저는 존재하지 않습니다...");
         }
-        await me.addFollowings(user);
-        res.status(201).json({ Follow: true, FolloweredId: user, FollowingId: me });
+        await me.addFollowings(req.params.id);
+        res.status(201).json({ id: parseInt(req.user.id) });
     } catch (err) {
         console.error(err);
         next(err);
@@ -126,8 +160,8 @@ router.post("/:id/unfollowing", isLoggedIn, async (req, res, next) => {
         if (!user) {
             res.status(404).send("해당 유저는 존재하지 않습니다...");
         }
-        await me.removeFollowings(user);
-        res.status(201).json({ UnFollow: true, UnFolloweredId: user, UnFollowingId: me });
+        await me.removeFollowings(req.params.id);
+        res.status(201).json({ id: parseInt(req.user.id) });
     } catch (err) {
         console.error(err);
         next(err);
