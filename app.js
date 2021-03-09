@@ -6,11 +6,20 @@ const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const passport = require("passport");
+const helmet = require("helmet");
+const hpp = require("hpp");
+const redis = require('redis');
+const RedisStore = require('connect-redis')(session);
+
 
 const db = require("./models");
 const passportConfig = require("./passport");
 
 dotenv.config();
+const redisClient = redis.createClient({
+    url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+    password: process.env.REDIS_PASSWORD
+});
 // router
 const postRouter = require("./routes/post");
 const userRouter = require("./routes/user");
@@ -32,7 +41,15 @@ app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true,
 }));
-app.use(morgan("dev")); //dev mode
+
+if (process.env.NODE_ENV === 'production') {
+    app.use(morgan('combined'));
+    app.use(helmet());
+    app.use(hpp());
+} else {
+    app.use(morgan('dev'));
+}
+
 app.use("/img", express.static(path.join(__dirname, "uploads")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // req.body
@@ -44,7 +61,8 @@ app.use(session({
     cookie: {
         httpOnly: true,
         secure: false
-    }
+    },
+    store: new RedisStore({ client: redisClient })
 }));
 app.use(passport.initialize());
 app.use(passport.session());
