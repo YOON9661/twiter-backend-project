@@ -11,6 +11,7 @@ const hpp = require("hpp");
 const redis = require('redis');
 const RedisStore = require('connect-redis')(session);
 
+// const csrf = require('csurf');
 
 const db = require("./models");
 const passportConfig = require("./passport");

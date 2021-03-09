@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const sanitizeHTML = require('sanitize-html');
 
 const { Post, User, Comment, Image } = require("../models");
 
@@ -77,16 +78,16 @@ router.post("/img", upload.single("img"), (req, res) => {
 
 // upload의 목적
 const upload2 = multer();
-router.post("/upload", upload2.none(), async (req, res, next) => {
+router.post("/upload", upload2.none(), isLoggedIn, async (req, res, next) => {
     try {
         const post = await Post.create({
-            content: req.body.description,
+            content: sanitizeHTML(req.body.description),
             UserId: req.user.id
         });
         // image가 있을 때..
         if (req.body.imagepath) {
             const image = await Image.create({
-                Imagepath: req.body.imagepath,
+                Imagepath: sanitizeHTML(req.body.imagepath),
                 UserId: req.user.id,
             });
             post.addImages(image);
@@ -123,7 +124,7 @@ router.delete("/:id/delete", isLoggedIn, async (req, res, next) => {
 
 
 // LIKE
-router.post("/:id/like", async (req, res, next) => {
+router.post("/:id/like", isLoggedIn, async (req, res, next) => {
     try {
         const post = await Post.findOne({
             where: {
@@ -149,7 +150,7 @@ router.post("/:id/like", async (req, res, next) => {
         next(err);
     }
 });
-router.delete("/:id/likedelete", async (req, res, next) => {
+router.delete("/:id/likedelete", isLoggedIn, async (req, res, next) => {
     try {
         const post = await Post.findOne({
             where: {
